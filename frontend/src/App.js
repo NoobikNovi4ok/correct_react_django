@@ -6,14 +6,66 @@ import axios from "axios";
 
 function App() {
   const [todos, setTodos] = useState([]);
+  const [name, setName] = useState("");
   const [editStatus, setEditStatus] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editTodo, setEditTodo] = useState();
   const [openEditUI, setOpenEditUI] = useState(true);
+
   const addTodoHandler = () => {
-    console.log("Add todo clicked");
+    const postTodo = async () => {
+      try {
+        const postTodoData = {
+          name: name,
+        };
+        const { data } = await axios.post(
+          "http://127.0.0.1:8000/todos",
+          postTodoData
+        );
+        setTodos([data, ...todos]);
+        setName("");
+      } catch (error) {
+        console.error("Error adding todo:", error);
+      }
+    };
+    postTodo();
   };
+
   const deleteTodoHandler = (id) => {
-    console.log("Delete todo with id:", id);
+    const deleteTodo = async () => {
+      try {
+        await axios.delete(`http://127.0.0.1:8000/todos/${id}`);
+        setTodos(todos.filter((t) => t.id !== id));
+      } catch (error) {
+        console.error("Error deleting todo with id:", id);
+      }
+    };
+    deleteTodo();
+  };
+
+  const editTodoHandler = (id) => {
+    const updatePatchTodo = async () => {
+      const UpdateData = {
+        name: editName,
+        status: editStatus,
+      };
+      const { data } = await axios.patch(
+        `http://127.0.0.1:8000/todos/${id}`,
+        UpdateData
+      );
+      const updatedTodos = todos.map((todo) => {
+        if (todo.id === id) {
+          return { ...todo, name: editName, status: editStatus };
+        }
+        return todo;
+      });
+      setTodos(updatedTodos);
+      setEditTodo();
+      setEditName("");
+      setEditStatus(false);
+      setOpenEditUI(false);
+    };
+    updatePatchTodo();
   };
 
   useEffect(() => {
@@ -33,6 +85,8 @@ function App() {
         <h1 className="display-4 text-center mb-4">Todo App</h1>
         <div className="d-flex align-items-center justify-content-between bg-secondary rounded p-3">
           <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             type="text"
             className="form-control"
             placeholder="Add a new todo..."
@@ -54,6 +108,7 @@ function App() {
               onClick={() => {
                 setEditStatus(todo.status);
                 setEditName(todo.name);
+                setEditTodo(todo.id);
                 setOpenEditUI(true);
               }}
             >
@@ -101,7 +156,10 @@ function App() {
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
           />
-          <button className="btn btn-success mx-auto border border-1 border-dark">
+          <button
+            className="btn btn-success mx-auto border border-1 border-dark"
+            onClick={() => editTodoHandler(editTodo)}
+          >
             Save
           </button>
         </div>
